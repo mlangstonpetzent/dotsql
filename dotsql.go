@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // Preparer is an interface used by Prepare.
@@ -25,14 +27,29 @@ type Queryer interface {
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 }
 
+// Queryxer is an interface used by Query.
+type Queryxer interface {
+	Queryx(query string, args ...interface{}) (*sqlx.Rows, error)
+}
+
 // QueryRower is an interface used by QueryRow
 type QueryRower interface {
 	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
+// QueryRower is an interface used by QueryRow
+type QueryRowxer interface {
+	QueryRowx(query string, args ...interface{}) *sqlx.Row
+}
+
 // Execer is an interface used by Exec.
 type Execer interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
+}
+
+// Execer is an interface used by Exec.
+type MustExecer interface {
+	MustExec(query string, args ...interface{}) (sql.Result, error)
 }
 
 // DotSql represents a dotSQL queries holder.
@@ -69,6 +86,16 @@ func (d DotSql) Query(db Queryer, name string, args ...interface{}) (*sql.Rows, 
 	return db.Query(query, args...)
 }
 
+// Queryx is a wrapper for database/sql's Query(), using dotsql named query.
+func (d DotSql) Queryx(db Queryxer, name string, args ...interface{}) (*sqlx.Rows, error) {
+	query, err := d.lookupQuery(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return db.Queryx(query, args...)
+}
+
 // QueryRow is a wrapper for database/sql's QueryRow(), using dotsql named query.
 func (d DotSql) QueryRow(db QueryRower, name string, args ...interface{}) (*sql.Row, error) {
 	query, err := d.lookupQuery(name)
@@ -79,6 +106,16 @@ func (d DotSql) QueryRow(db QueryRower, name string, args ...interface{}) (*sql.
 	return db.QueryRow(query, args...), nil
 }
 
+// QueryRow is a wrapper for database/sql's QueryRow(), using dotsql named query.
+func (d DotSql) QueryRowx(db QueryRowxer, name string, args ...interface{}) (*sqlx.Row, error) {
+	query, err := d.lookupQuery(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return db.QueryRowx(query, args...), nil
+}
+
 // Exec is a wrapper for database/sql's Exec(), using dotsql named query.
 func (d DotSql) Exec(db Execer, name string, args ...interface{}) (sql.Result, error) {
 	query, err := d.lookupQuery(name)
@@ -87,6 +124,16 @@ func (d DotSql) Exec(db Execer, name string, args ...interface{}) (sql.Result, e
 	}
 
 	return db.Exec(query, args...)
+}
+
+// MustExec is a wrapper for sqlx's MustExec(), using dotsql named query.
+func (d DotSql) MustExec(db MustExecer, name string, args ...interface{}) (sql.Result, error) {
+	query, err := d.lookupQuery(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return db.MustExec(query, args...)
 }
 
 // Raw returns the query, everything after the --name tag
