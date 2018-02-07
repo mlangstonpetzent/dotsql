@@ -17,6 +17,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+var dotsql *DotSql
+
 // Preparer is an interface used by Prepare.
 type Preparer interface {
 	Prepare(query string) (*sql.Stmt, error)
@@ -151,8 +153,15 @@ func Load(r io.Reader) (*DotSql, error) {
 	scanner := &Scanner{}
 	queries := scanner.Run(bufio.NewScanner(r))
 
-	dotsql := &DotSql{
-		queries: queries,
+	if dotsql == nil {
+		dotsql = &DotSql{
+			queries: queries,
+		}
+	} else {
+		//merge in new queries
+		for k, v := range queries {
+			dotsql.queries[k] = v
+		}
 	}
 
 	return dotsql, nil
